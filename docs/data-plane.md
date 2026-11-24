@@ -902,7 +902,23 @@ mounting the same KB get the same behaviour. `settings.yaml` at the KB root, bes
   "no relations". The parser keeps the key with its well-formed items: a non-mapping item, a
   missing or unknown field, a name that is not a KB name, a remote that is not a git remote or a
   name declared twice leaves out that item alone, with one finding `depends_on[<i>]`; a value that
-  is not a list leaves out the key. This key only declares: nothing resolves the names against the mounted KBs yet.
+  is not a list leaves out the key.
+
+  **Resolution** (`kb.ResolveRelations`, one function for every surface). A declared `{name, remote}`
+  resolves when a KB is mounted under `name` or under an old name `kb_aliases` still maps (a
+  mounted name beats an alias, D772), the caller may read it, and its origin
+  (`KB.NormalizedOrigin`) equals the declared remote; the remote guard applies to a target found
+  through an alias as to any other. The view has `declared` and `unresolved` as written, and
+  `resolved` (direct edges) and `closure` (transitive, depth-first discovery order, the KB itself
+  excluded) by **current** mount name. An unresolved item has one reason: `not_mounted`,
+  `remote_mismatch` (the target's actual remote is never shown), `no_remote` (a folder mount),
+  `self` (the declaration names the KB itself by mount name or by its own origin), `cycle` or
+  `too_deep` (a walk would pass 64 KBs). A direct edge to `T` is a `cycle` when the KB is reachable
+  from `T`: in `a` to `b` to `a` the edge is a cycle in the view of each, and both closures are
+  empty; a cycle that does not pass through the KB marks none of its edges. A KB the caller cannot
+  read is never entered and answers exactly like one that is not mounted (`not_mounted`), so its own
+  relations never reach the closure. A git failure reading any entered KB's `settings.yaml` is an
+  error and no view.
 
 Two things are derived and have no key (D906). A KB **declares secrets** when at least one YAML
 file directly under `secrets/` carries sops metadata (read, never decrypted): a mount of such a KB
