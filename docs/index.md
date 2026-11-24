@@ -31,6 +31,7 @@ only the pages relevant to your task.
 | [concurrency.md](concurrency.md) | Single-writer boundary, git sync, `if_match` and conflict registry |
 | [transport-auth.md](transport-auth.md) | stdio / HTTP transport, static bearer tokens, per-KB scopes and statelessness |
 | [loop.md](loop.md) | Current read, write, validate and lint workflow |
+| [kb-relations.md](kb-relations.md) | `depends_on` in a KB's `settings.yaml`: declaration, remote guard, default-branch read, resolution (aliases, closure, cycles, reasons) |
 | [interoperability.md](interoperability.md) | OKF boundaries and ownership of provider-specific compatibility documentation |
 | [harnesses.md](harnesses.md) | Harness ledger: per agent client, the version last aligned with, where changes are announced, which provider-matrix cells depend on it and the open watch items |
 | [decisions.md](decisions.md) | How to refer to and add a decision, plus the generated list of every record under `docs/decisions/` (one file each); decisions explain why, while topic docs define current behavior |

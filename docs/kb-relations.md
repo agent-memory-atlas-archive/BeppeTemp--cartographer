@@ -1,0 +1,35 @@
+# KB relations: `depends_on`
+
+A KB declares in its own `settings.yaml` the KBs it depends on (`docs/data-plane.md` §The KB's own settings lists the key). The server resolves the declaration against the KBs it mounts.
+
+`depends_on`: the KBs this KB needs, a list of `{name, remote}` items. `name` is the mount name
+of the other KB on the server; `remote` is its git remote, in the canonical `host/owner/name`
+form or as a clone URL (ssh, https, `git://`), and is the **guard**: a mount name is not
+identity (a rename, D772, or another server may map one name to another KB), so a KB mounted
+under `name` whose origin differs is not the one meant. Remotes are compared through
+`repoindex.NormalizeRemote`, the same normalization `paths.yaml` uses (`kb.NormalizeDeclaredRemote`):
+case in owner and name is significant. Like `branch`, it is read **only from the `settings.yaml`
+committed on the remote's default branch** (`KB.Relations`; `HEAD` for a KB with no remote), so
+a working branch cannot widen a binding; the working copy's value is parsed and shown only. The
+read is memoized on the ref's commit and answered from memory for a few seconds, so a change on
+the default branch is seen within that bound. A git failure while reading is an error, never
+"no relations". The parser keeps the key with its well-formed items: a non-mapping item, a
+missing or unknown field, a name that is not a KB name, a remote that is not a git remote or a
+name declared twice leaves out that item alone, with one finding `depends_on[<i>]`; a value that
+is not a list leaves out the key.
+
+**Resolution** (`kb.ResolveRelations`, one function for every surface). A declared `{name, remote}`
+resolves when a KB is mounted under `name` or under an old name `kb_aliases` still maps (a
+mounted name beats an alias, D772), the caller may read it, and its origin
+(`KB.NormalizedOrigin`) equals the declared remote; the remote guard applies to a target found
+through an alias as to any other. The view has `declared` and `unresolved` as written, and
+`resolved` (direct edges) and `closure` (transitive, depth-first discovery order, the KB itself
+excluded) by **current** mount name. An unresolved item has one reason: `not_mounted`,
+`remote_mismatch` (the target's actual remote is never shown), `no_remote` (a folder mount),
+`self` (the declaration names the KB itself by mount name or by its own origin), `cycle` or
+`too_deep` (a walk would pass 64 KBs). A direct edge to `T` is a `cycle` when the KB is reachable
+from `T`: in `a` to `b` to `a` the edge is a cycle in the view of each, and both closures are
+empty; a cycle that does not pass through the KB marks none of its edges. A KB the caller cannot
+read is never entered and answers exactly like one that is not mounted (`not_mounted`), so its own
+relations never reach the closure. A git failure reading any entered KB's `settings.yaml` is an
+error and no view.
